@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { ChevronDown, Check } from 'lucide-react';
+
 import { Menu, PenLine, Plus, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Message, FashionRecommendation } from './types';
@@ -48339,7 +48341,7 @@ Style: ${recommendation.style}`;
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-black via-purple-950 to-purple-900">
+    <div className="min-h-screen bg-gradient-to-br from-black via-black to-purple-500">
       {/* Sliding Sidebar */}
       <div 
         className={`fixed left-0 top-0 h-full w-64 bg-[#1C1C1C] transform transition-transform duration-300 ease-in-out z-50 ${
@@ -48391,16 +48393,19 @@ Style: ${recommendation.style}`;
               >
                 <Menu className="w-6 h-6 text-white" />
               </button>
-              <span className="text-purple-400 text-2xl font-semibold">STYLUX</span>
-              <button className="p-1 hover:bg-purple-800/30 rounded">
-                <PenLine size={20} className="text-purple-400" />
+              <div className="flex items-center">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+              STYLUX
+            </h1>
+            <ChevronDown className="w-5 h-5 text-white ml-2" />
+          </div>            <button className="p-1 hover:bg-purple-800/30 rounded">
               </button>
             </div>
             <div className="flex items-center gap-4">
-              <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
+              <button className="px-6 py-2 bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium">
                 <Link to="/">Home</Link>
               </button>
-              <button className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
+              <button className="px-6 py-2 bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium">
                 <Link to="/try">Try for free</Link>
               </button>
             </div>
@@ -48414,11 +48419,19 @@ Style: ${recommendation.style}`;
                   key={index}
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
+                  <div className="flex items-start gap-2">
+                {msg.sender !== "user" && (
+                  <img
+                    src="src/images/image 3.png" // Replace with your logo path
+                    alt="icon"
+                    className="w-9 h-10 rounded-full mt-2"
+                  />
+                )}
                   <div
                     className={`max-w-[80%] p-4 rounded-2xl ${
                       msg.sender === "user"
-                        ? "bg-purple-600 text-white rounded-tr-sm"
-                        : "bg-[#2D1F3D] text-white rounded-tl-sm"
+                        ? "bg-[#2D1F3D] text-white rounded-tr-sm"
+                        : " text-white rounded-tl-sm"
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -48427,7 +48440,8 @@ Style: ${recommendation.style}`;
                     </span>
                   </div>
                 </div>
-              ))}
+
+</div>              ))}
               <div ref={chatEndRef} />
             </div>
           </div>
@@ -48438,7 +48452,7 @@ Style: ${recommendation.style}`;
               <div className="flex gap-4 items-center">
                 <input
                   type="text"
-                  placeholder="Message STYLUX..."
+                  placeholder="Message STYLUX"
                   className="flex-1 bg-purple-900/40 backdrop-blur-lg px-4 py-3 rounded-lg border border-purple-800/50 text-white placeholder-zinc-400 outline-none"
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
@@ -48451,9 +48465,9 @@ Style: ${recommendation.style}`;
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                  className="px-6 py-2 bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium"
                 >
-                  Send
+                  Generate
                 </button>
               </div>
             </form>

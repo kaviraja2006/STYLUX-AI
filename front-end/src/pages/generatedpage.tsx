@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Search, Plus, Globe2, ChevronDown } from 'lucide-react';
+import { Menu, Search,  Globe2, ChevronDown } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import './generated.css';
 
@@ -65,7 +65,7 @@ function GeneratedPage({ initialMessage }: GeneratedPageProps) {
           </div>
           
           <div className='ho'>
-          <button className="px-6 py-2 bg-purple-500 hover:bg-purple-600 transition-colors rounded-full text-white text-sm font-medium left-10px">
+          <button className="px-6 py-2 bg-purple-500 text-white rounded-full hover:bg-purple-600 transition-colors">
            <Link to='/'> Home</Link>
           </button>
           </div>
@@ -78,46 +78,19 @@ function GeneratedPage({ initialMessage }: GeneratedPageProps) {
 
         {/* Main Content Area */}
         <main className="max-w-4xl mx-auto px-4 pt-20">
-          <h1 className="text-white text-5xl font-bold text-center mb-16">
-            What can I help you with?
+          <h1 className="text-white text-7xl font-bold text-center mb-20">
+            Introducing STYLUX
           </h1>
 
           {/* Message Input Box */}
-          <div className="relative">
-            <div className="bg-zinc-900/30 backdrop-blur-lg rounded-2xl p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <button className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                  <Plus className="w-6 h-6 text-zinc-400" />
-                </button>
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Message STYLUX"
-                  onClick={handleMessage}
-                  className="flex-1 bg-transparent text-white placeholder-zinc-400 outline-none"
-                />
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 hover:bg-white/5 transition-colors">
-                  <Globe2 className="w-4 h-4 text-zinc-400" />
-                  <span className="text-zinc-400 text-sm">Browse</span>
-                </button>
-                <button className="px-6 py-2 bg-purple-500 hover:bg-purple-600 transition-colors rounded-full text-white text-sm font-medium">
-                  Generate
-                </button>
-              </div>
-            </div>
+          <div>
+          <Link to='/messages'><button className="px-8 py-4 bg-purple-500 hover:bg-purple-600 transition-colors rounded-full text-white text-sm font-medium">
+                  Try STYLUX
+                </button></Link>
+                <h4>Sign up STYLUX</h4>
+          
+                </div>
 
-            {/* Privacy Notice */}
-            <p className="text-center text-zinc-400 text-sm mt-4">
-              By clicking "Generate" you agree to generate.{' '}
-              <a href="#" className="text-purple-400 hover:underline">
-                Privacy Notice
-              </a>
-            </p>
-          </div>
         </main>
       </div>
     </div>
