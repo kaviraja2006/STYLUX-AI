@@ -7,7 +7,7 @@ import Signup from "./pages/signup";
 import Tryfor from "./pages/tryforfree";
 import Login from "./pages/login";
 import AuthPage from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard";
 import "./app.css";
 
 export default function App() {
