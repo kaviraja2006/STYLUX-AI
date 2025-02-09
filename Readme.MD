@@ -53,16 +53,6 @@ npm run dev
 
 Now STYLUX AI will be on your system 🎉
 
-Folder Structure 📁
-
-Stylux-AI/
-│-- src/
-│   │-- pages/            # Page components (Home, Chat, tailwind, css etc.)
-│   │-- App.tsx           # Main App component
-│-- public/               # Static assets
-│-- package.json          # Dependencies and scripts
-│-- README.md             # Project documentation
-
 Contributing 🤝
 
 We welcome contributions! If you want to improve Stylux AI:
