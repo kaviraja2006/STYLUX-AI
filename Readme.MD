@@ -2,6 +2,16 @@
 
 Stylux AI is a smart fashion assistant that helps users find clothing styles based on their personal interests. It provides personalized outfit recommendations by understanding user preferences. Our goal is to make fashion discovery easier and more enjoyable. 💜
 
+### Are You Solving Real-World Problem
+
+Yes
+
+### Problem
+Many people struggle to find fashion styles that suit their personality, body type, and preferences. With countless options available, selecting the perfect outfit can be overwhelming. Traditional shopping lacks personalized recommendations, leading to frustration and wasted time.
+
+### Solution
+Stylux AI simplifies fashion selection by using AI to provide tailored outfit recommendations based on user preferences, making styling effortless and enjoyable.
+
 ## Features ✨
 
 Personalized Outfit Suggestions – Get recommendations tailored to your taste.
