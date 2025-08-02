@@ -48313,9 +48313,9 @@ Style: ${recommendation.style}`;
       await new Promise(resolve => setTimeout(resolve, 1000));
       const req={message:currentInput,conversation_history:chatHistory}
       console.log(req)
-      let data = await axios.post("https://stylux-ai-14.onrender.com/chat",req)
+      let data = await axios.post("http://localhost:8000/chat",req)
       data=await data.data
-      const text=data.response+" "+data.suggested_options.join(" ")
+      const text=data.response
       console.log(text)
       const botMessage: Message = {
         sender: "bot",

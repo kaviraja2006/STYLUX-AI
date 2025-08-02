@@ -5,15 +5,33 @@ import pandas as pd
 import sys
 import google.generativeai as genai
 from typing import List, Optional
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
-app = FastAPI()
+# Load environment variables from .env file
+load_dotenv()
 
+# Configure the FastAPI app
+app = FastAPI(
+    title="STYLUX AI Fashion Assistant API",
+    description="AI-powered fashion recommendation chatbot API",
+    version="1.0.0"
+)
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Pydantic models
 class Message(BaseModel):
     sender: str
     text: str
-    timestamp:str
+    timestamp: str
 
 class ChatRequest(BaseModel):
     message: str
@@ -23,30 +41,37 @@ class ChatResponse(BaseModel):
     response: str
     suggested_options: Optional[List[str]] = None
 
-app = FastAPI(
-    title="Fashion Suggestion Chatbot API",
-    description="API for interacting with a fashion chatbot",
-    version="1.0.0"
-)
+# Initialize Google AI
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+if not GOOGLE_API_KEY:
+    print("Warning: GOOGLE_API_KEY not found in environment variables")
+    print("Please set GOOGLE_API_KEY in your .env file")
+    # For development, you can set a placeholder
+    GOOGLE_API_KEY = "your_google_api_key_here"
 
-origins = ["*"]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-GEMINI_API_KEY = os.getenv('GEMINI-API-KEY')
-genai.configure(api_key='AIzaSyAlhkGue264_LOKUXakytcA2x5XacpwUuo')
-model = genai.GenerativeModel('gemini-pro')
+try:
+    genai.configure(api_key=GOOGLE_API_KEY)
+    model = genai.GenerativeModel('gemini-pro')
+    # Test the API connection
+    test_response = model.generate_content("Test")
+    print("✅ Google AI API is working!")
+except Exception as e:
+    print(f"❌ Error configuring Google AI: {e}")
+    if "SERVICE_DISABLED" in str(e) or "403" in str(e):
+        print("🔧 To fix this:")
+        print("1. Go to: https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview")
+        print("2. Enable the Generative Language API")
+        print("3. Wait a few minutes and restart the server")
+    model = None
 
 def load_fashion_data() -> pd.DataFrame:
     """Load and clean fashion data from the CSV file."""
     try:
-        df = pd.read_csv('./final.csv')
+        # Get the directory where this script is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, 'final.csv')
+        
+        df = pd.read_csv(csv_path)
 
         # Remove unnecessary or empty columns
         df = df.drop(columns=['Unnamed: 6'], errors='ignore')
@@ -56,99 +81,386 @@ def load_fashion_data() -> pd.DataFrame:
 
         return df
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="CSV file not found")
+        print(f"CSV file not found at {csv_path}")
+        raise HTTPException(status_code=404, detail="Fashion data file not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error loading CSV: {str(e)}")
+        print(f"Error loading CSV: {e}")
+        raise HTTPException(status_code=500, detail=f"Error loading fashion data: {str(e)}")
 
 def generate_prompt_from_history(conversation_history: List[Message], df: pd.DataFrame) -> str:
     """Generate a prompt for the AI model based on user history and fashion data."""
     
-    # Extract user preferences from conversation history
-    user_preferences = [msg.text for msg in conversation_history if msg.sender == "user"]
-
-    # Try to match the last mentioned preference (e.g., skin_tone or preferred color)
-    if user_preferences:
-        last_preference = user_preferences[-1].strip().lower()
-        
-        # Search dataset for matching skin tone or preferred color
-        relevant_data = df[
-            df['skin_tone'].str.lower().str.contains(last_preference, na=False) | 
-            df['preferred_colors'].str.lower().str.contains(last_preference, na=False)
-        ]
+    # Get relevant fashion data based on user message
+    user_message = conversation_history[-1].text if conversation_history else ""
+    message_lower = user_message.lower()
+    
+    # Search for relevant outfits based on keywords
+    relevant_outfits = []
+    
+    # Keywords for different styles and preferences
+    summer_keywords = ['summer', 'hot', 'warm', 'beach', 'vacation']
+    formal_keywords = ['formal', 'business', 'office', 'professional', 'work']
+    party_keywords = ['party', 'celebration', 'evening', 'night', 'dress']
+    casual_keywords = ['casual', 'everyday', 'comfortable', 'relaxed']
+    skin_tone_keywords = ['fair', 'tan', 'medium', 'dark', 'honey', 'caramel', 'deep tan', 'warm brown', 'ebony', 'porcelain', 'light', 'beige', 'olive', 'deep dark']
+    color_keywords = ['blue', 'red', 'green', 'yellow', 'black', 'white', 'brown', 'gray', 'navy', 'olive', 'burgundy', 'gold', 'silver', 'emerald', 'mustard', 'charcoal', 'cream', 'tan', 'mint', 'royal', 'sky', 'deep red', 'burnt orange']
+    
+    # Filter outfits based on user input
+    if any(keyword in message_lower for keyword in skin_tone_keywords):
+        # Find specific skin tone matches
+        for skin_tone in skin_tone_keywords:
+            if skin_tone in message_lower:
+                relevant_outfits = df[df['skin_tone'].str.contains(skin_tone, case=False, na=False)].head(5)
+                break
+    elif any(keyword in message_lower for keyword in color_keywords):
+        # Find color matches
+        for color in color_keywords:
+            if color in message_lower:
+                relevant_outfits = df[df['preferred_colors'].str.contains(color, case=False, na=False) | 
+                                   df['recommended_outfit_(men)'].str.contains(color, case=False, na=False)].head(5)
+                break
+    elif any(keyword in message_lower for keyword in summer_keywords):
+        relevant_outfits = df[df['style'].str.contains('casual', case=False, na=False)].head(5)
+    elif any(keyword in message_lower for keyword in formal_keywords):
+        relevant_outfits = df[df['style'].str.contains('formal|business', case=False, na=False)].head(5)
+    elif any(keyword in message_lower for keyword in party_keywords):
+        relevant_outfits = df[df['style'].str.contains('party|evening|elegant', case=False, na=False)].head(5)
     else:
-        relevant_data = df
-
-    # Limit to top 3 relevant outfits
-    outfits = relevant_data[['skin_tone', 'recommended_outfit_(men)', 'why_this_outfit_(men)', 'shade', 'preferred_colors', 'style']].head(3).to_dict(orient="records")
-
-    # Format the output into a structured prompt
-    outfit_details = "\n".join([
-        f"Skin Tone: {item['skin_tone']}, Shade: {item['shade']}, Preferred Colors: {item['preferred_colors']}, "
-        f"Style: {item['style']}, Outfit: {item['recommended_outfit_(men)']} - Why: {item['why_this_outfit_(men)']}"
-        for item in outfits
+        # Get diverse suggestions if no specific matches
+        relevant_outfits = df.sample(n=min(5, len(df)))
+    
+    # If no specific matches, get diverse suggestions
+    if relevant_outfits.empty:
+        relevant_outfits = df.sample(n=min(5, len(df)))
+    
+    # Format the fashion data for the AI
+    fashion_data = "\n".join([
+        f"Outfit: {outfit['recommended_outfit_(men)']} | "
+        f"Skin Tone: {outfit['skin_tone']} | "
+        f"Colors: {outfit['preferred_colors']} | "
+        f"Style: {outfit['style']} | "
+        f"Reason: {outfit['why_this_outfit_(men)']}"
+        for _, outfit in relevant_outfits.iterrows()
     ])
-
-    if not outfit_details:
-        outfit_details = "No exact match found. Try specifying a different skin tone or color preference."
-
-    # Build final prompt including conversation history
+    
+    # Build conversation history
     conversation_str = "\n".join([f"{msg.sender}: {msg.text}" for msg in conversation_history])
-
-    final_prompt = f"""
-    Conversation History:
-    {conversation_str}
-
-    Based on user preferences, here are some recommended outfits:
-    {outfit_details}
-    """
-
-    # return final_prompt.strip()
-
-
-    # Build a dynamic prompt
+    
+    # Create a comprehensive prompt for the AI
     prompt = f"""
-Conversation history:
+You are STYLUX, a friendly and knowledgeable AI fashion assistant. You help users find the perfect outfits based on their preferences, skin tone, and style needs.
+
+Fashion Database (relevant to user's request):
+{fashion_data}
+
+Conversation History:
 {conversation_str}
 
-Based on the fashion dataset:
-{outfit_details}
+User's Request: {user_message}
 
-Please provide a fashion suggestion considering the above details and user preferences.
+Instructions:
+1. Analyze the user's request and the fashion database above
+2. Provide personalized, conversational fashion advice using the specific outfits from the database
+3. Reference the exact outfits, skin tones, colors, and reasons from the database
+4. Explain why each suggestion works for their specific needs
+5. Be friendly, helpful, and specific about the recommendations
+6. If they mention skin tone or colors, use that information to filter suggestions
+7. If they don't specify preferences, suggest diverse options from the database
+8. Always base your recommendations on the fashion data provided above
+
+Please provide a natural, conversational response that references specific outfits from the database and explains why they work for the user's needs.
 """
-    return prompt
+    
+    return prompt.strip()
 
 async def generate_response_from_gemini(prompt: str) -> str:
     """Generate a response from the Gemini AI model."""
+    if not model:
+        return "I'm sorry, but I'm currently unable to process fashion requests. Please check the API configuration."
+    
     try:
-        model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating response: {str(e)}")
+        print(f"Gemini API error: {e}")
+        return "I'm sorry, but I'm having trouble processing your request right now. Please try again later."
+
+def generate_fallback_response(user_message: str, df: pd.DataFrame) -> str:
+    """Generate a fallback response using the fashion dataset when AI is not available."""
+    try:
+        # Convert user message to lowercase for matching
+        message_lower = user_message.lower()
+        
+        # Define keywords for different categories
+        summer_keywords = ['summer', 'hot', 'warm', 'beach', 'vacation', 'casual']
+        formal_keywords = ['formal', 'business', 'office', 'professional', 'work']
+        party_keywords = ['party', 'celebration', 'evening', 'night', 'dress', 'elegant']
+        skin_tone_keywords = ['fair', 'tan', 'medium', 'dark', 'honey', 'caramel', 'deep tan', 'warm brown', 'ebony', 'porcelain', 'light', 'beige', 'olive', 'deep dark']
+        color_keywords = ['blue', 'red', 'green', 'yellow', 'black', 'white', 'brown', 'gray', 'navy', 'olive', 'burgundy', 'gold', 'silver', 'emerald', 'mustard', 'charcoal', 'cream', 'tan', 'mint', 'royal', 'sky', 'deep red', 'burnt orange']
+        
+        # Determine the type of request
+        is_summer_request = any(keyword in message_lower for keyword in summer_keywords)
+        is_formal_request = any(keyword in message_lower for keyword in formal_keywords)
+        is_party_request = any(keyword in message_lower for keyword in party_keywords)
+        has_skin_tone = any(keyword in message_lower for keyword in skin_tone_keywords)
+        has_color_preference = any(keyword in message_lower for keyword in color_keywords)
+        
+        # Find specific skin tone if mentioned
+        specific_skin_tone = None
+        for skin_tone in skin_tone_keywords:
+            if skin_tone in message_lower:
+                specific_skin_tone = skin_tone
+                break
+        
+        # Find specific color if mentioned
+        specific_color = None
+        for color in color_keywords:
+            if color in message_lower:
+                specific_color = color
+                break
+        
+        # Filter outfits based on request type and preferences
+        if specific_skin_tone:
+            relevant_outfits = df[df['skin_tone'].str.contains(specific_skin_tone, case=False, na=False)].head(3)
+        elif specific_color:
+            relevant_outfits = df[
+                (df['preferred_colors'].str.contains(specific_color, case=False, na=False)) |
+                (df['recommended_outfit_(men)'].str.contains(specific_color, case=False, na=False))
+            ].head(3)
+        elif is_summer_request:
+            relevant_outfits = df[df['style'].str.contains('casual', case=False, na=False)].head(3)
+        elif is_formal_request:
+            relevant_outfits = df[df['style'].str.contains('formal|business', case=False, na=False)].head(3)
+        elif is_party_request:
+            relevant_outfits = df[df['style'].str.contains('party|evening|elegant', case=False, na=False)].head(3)
+        else:
+            # Get diverse suggestions
+            relevant_outfits = df.sample(n=min(3, len(df)))
+        
+        if relevant_outfits.empty:
+            relevant_outfits = df.sample(n=min(3, len(df)))
+        
+        # Create personalized response based on request type
+        if specific_skin_tone:
+            intro = f"Perfect! I found some great options for {specific_skin_tone} skin tone:"
+        elif specific_color:
+            intro = f"Excellent choice! Here are some stylish {specific_color} options:"
+        elif is_summer_request:
+            intro = "Perfect for summer! Here are some great warm-weather outfit suggestions:"
+        elif is_formal_request:
+            intro = "Great choice for professional settings! Here are some formal outfit recommendations:"
+        elif is_party_request:
+            intro = "Time to party! Here are some stylish evening outfit options:"
+        else:
+            intro = "Here are some fantastic fashion suggestions for you:"
+        
+        response_parts = [intro]
+        
+        # Add specific outfit recommendations with explanations
+        for idx, outfit in relevant_outfits.iterrows():
+            outfit_desc = f"• {outfit['recommended_outfit_(men)']} - {outfit['why_this_outfit_(men)']}"
+            response_parts.append(outfit_desc)
+        
+        # Add personalized tip based on request
+        if specific_skin_tone:
+            response_parts.append(f"\n💡 Tip: These suggestions are specifically tailored for {specific_skin_tone} skin tone. For even better results, try mentioning your preferred colors too!")
+        elif specific_color:
+            response_parts.append(f"\n💡 Tip: Great {specific_color} choices! These suggestions complement your color preference perfectly.")
+        elif has_skin_tone:
+            response_parts.append("\n💡 Tip: I've considered your skin tone in these suggestions. For even better results, try mentioning your preferred colors too!")
+        elif has_color_preference:
+            response_parts.append("\n💡 Tip: Great color choice! These suggestions complement your preferred colors perfectly.")
+        else:
+            response_parts.append("\n💡 Tip: For more personalized recommendations, try mentioning your skin tone or preferred colors!")
+        
+        return "\n\n".join(response_parts)
+        
+    except Exception as e:
+        print(f"Error generating fallback response: {e}")
+        # Provide a basic response even if there's an error
+        try:
+            basic_outfits = df.head(3)
+            response_parts = ["Here are some great fashion suggestions:"]
+            for idx, outfit in basic_outfits.iterrows():
+                outfit_desc = f"• {outfit['recommended_outfit_(men)']} - {outfit['why_this_outfit_(men)']}"
+                response_parts.append(outfit_desc)
+            return "\n\n".join(response_parts)
+        except:
+            return "Here are some great fashion suggestions:\n\n• Blue Casual Shirt - Matches fair skin tone, blue/white colors, and casual summer style.\n• Mustard Yellow Casual Shirt + Brown Pants - Fits tan skin tone, and mustard yellow/brown preferences for formal wear.\n• Red T-shirt + Black Jeans - Matches medium skin tone with red/black colors, and is great for casual wear."
+
+def detect_greeting(user_message: str) -> bool:
+    """Detect if the user message is a greeting."""
+    greeting_keywords = [
+        'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
+        'howdy', 'greetings', 'what\'s up', 'sup', 'yo', 'good day',
+        'morning', 'afternoon', 'evening', 'hi there', 'hello there'
+    ]
+    
+    message_lower = user_message.lower().strip()
+    return any(greeting in message_lower for greeting in greeting_keywords)
+
+def detect_farewell(user_message: str) -> bool:
+    """Detect if the user message is a farewell."""
+    farewell_keywords = [
+        'bye', 'goodbye', 'see you', 'see ya', 'take care', 'farewell',
+        'good night', 'goodnight', 'have a good day', 'have a nice day',
+        'thanks', 'thank you', 'thank you so much', 'thanks a lot'
+    ]
+    
+    message_lower = user_message.lower().strip()
+    return any(farewell in message_lower for farewell in farewell_keywords)
+
+def get_greeting_response() -> str:
+    """Get a friendly greeting response."""
+    greetings = [
+        "Hello! 👋 I'm STYLUX, your AI fashion assistant. I'm here to help you find the perfect outfits based on your style preferences, skin tone, and color choices. What would you like to know about fashion today?",
+        
+        "Hi there! ✨ Welcome to STYLUX - your personal fashion advisor. I can help you discover amazing outfit combinations that match your skin tone, preferred colors, and style. What's your fashion question?",
+        
+        "Hey! 🎨 Great to meet you! I'm STYLUX, your AI fashion companion. Whether you're looking for casual wear, formal attire, or party outfits, I've got you covered. What style are you thinking about today?",
+        
+        "Good day! 👔 I'm STYLUX, your fashion expert. From summer casuals to elegant evening wear, I can suggest perfect outfits that complement your skin tone and color preferences. What's on your mind?",
+        
+        "Hello! 🌟 Welcome to STYLUX! I'm here to be your personal stylist. I can recommend outfits based on your skin tone, favorite colors, and the occasion. What kind of look are you going for?"
+    ]
+    
+    import random
+    return random.choice(greetings)
+
+def get_farewell_response() -> str:
+    """Get a friendly farewell response."""
+    farewells = [
+        "You're welcome! 👋 It was great helping you with your fashion choices. Feel free to come back anytime for more style advice. Have a fabulous day!",
+        
+        "Thanks for chatting with me! ✨ I hope you found some great outfit ideas. Don't hesitate to return if you need more fashion inspiration. Stay stylish!",
+        
+        "Goodbye! 🎨 It was a pleasure being your fashion assistant today. Remember, confidence is the best accessory! Come back soon for more style tips.",
+        
+        "Take care! 👔 Thanks for choosing STYLUX for your fashion needs. I'm always here when you need style advice. Have a wonderful day!",
+        
+        "See you later! 🌟 Thanks for the chat! I hope my suggestions help you look and feel amazing. Come back anytime for more fashion guidance!"
+    ]
+    
+    import random
+    return random.choice(farewells)
 
 @app.post("/chat")
-async def chat_endpoint(request:ChatRequest):
+async def chat_endpoint(request: ChatRequest):
+    """Main chat endpoint for fashion recommendations."""
     try:
-        print(request)
+        print(f"Received chat request: {request.message}")
+        
+        # Check if it's a greeting
+        if detect_greeting(request.message):
+            print("Greeting detected, sending welcome message")
+            return ChatResponse(
+                response=get_greeting_response(),
+                suggested_options=[
+                    "Tell me about summer outfits",
+                    "I have fair skin, what should I wear?",
+                    "Show me formal business wear",
+                    "I like blue colors, any suggestions?"
+                ]
+            )
+        
+        # Check if it's a farewell
+        if detect_farewell(request.message):
+            print("Farewell detected, sending goodbye message")
+            return ChatResponse(
+                response=get_farewell_response(),
+                suggested_options=[
+                    "Tell me about summer outfits",
+                    "I have fair skin, what should I wear?",
+                    "Show me formal business wear",
+                    "I like blue colors, any suggestions?"
+                ]
+            )
+        
         df = load_fashion_data()
-        prompt = generate_prompt_from_history(request.conversation_history, df)
-        response_text = await generate_response_from_gemini(prompt)
+        
+        # Check if AI is properly configured
+        if model is None:
+            print("AI model not configured, using fallback")
+            response_text = generate_fallback_response(request.message, df)
+        else:
+            # Try to use AI first
+            try:
+                prompt = generate_prompt_from_history(request.conversation_history, df)
+                response_text = await generate_response_from_gemini(prompt)
+                
+                # Check if AI response is an error message
+                if any(error_msg in response_text.lower() for error_msg in [
+                    "i'm sorry", "unable to process", "having trouble", "error"
+                ]):
+                    print("AI returned error, using fallback")
+                    response_text = generate_fallback_response(request.message, df)
+                else:
+                    print("AI response generated successfully")
+                    
+            except Exception as e:
+                print(f"AI generation failed: {e}, using fallback")
+                response_text = generate_fallback_response(request.message, df)
 
-        suggested_options = df[['recommended_outfit_(men)', 'why_this_outfit_(men)']].head(3).to_dict(orient="records")
+        # Get suggested options from the dataset based on user message
+        message_lower = request.message.lower()
+        
+        # Filter suggestions based on user input
+        if any(keyword in message_lower for keyword in ['summer', 'hot', 'warm', 'casual']):
+            suggested_df = df[df['style'].str.contains('casual', case=False, na=False)]
+        elif any(keyword in message_lower for keyword in ['formal', 'business', 'office']):
+            suggested_df = df[df['style'].str.contains('formal|business', case=False, na=False)]
+        elif any(keyword in message_lower for keyword in ['party', 'evening', 'night']):
+            suggested_df = df[df['style'].str.contains('party|evening|elegant', case=False, na=False)]
+        else:
+            suggested_df = df
+        
+        # If filtered results are empty, use all data
+        if suggested_df.empty:
+            suggested_df = df
+            
+        suggested_options = suggested_df[['recommended_outfit_(men)', 'why_this_outfit_(men)']].head(3).to_dict(orient="records")
+        
         return ChatResponse(
             response=response_text,
             suggested_options=[f"{item['recommended_outfit_(men)']} - Why: {item['why_this_outfit_(men)']}" for item in suggested_options]
         )
     except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        print(f"Error in chat endpoint: {e}")
+        # Even if there's an error, try to provide a fallback response
+        try:
+            df = load_fashion_data()
+            fallback_response = generate_fallback_response(request.message, df)
+            return ChatResponse(response=fallback_response)
+        except:
+            raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@app.get("/")
+async def root():
+    """Root endpoint to check if API is running."""
+    return {"message": "STYLUX AI Fashion Assistant API is running!"}
 
 @app.get("/test")
 async def test_endpoint():
     """Test endpoint to verify API is working"""
-    df = load_fashion_data()
-    return {
-        "status": "API is running",
-        "data_loaded": not df.empty,
-        "categories": [cat for cat in df['skin_tone'].unique() if pd.notna(cat)]
-    }
+    try:
+        df = load_fashion_data()
+        return {
+            "status": "API is running",
+            "data_loaded": not df.empty,
+            "total_outfits": len(df),
+            "skin_tones": [cat for cat in df['skin_tone'].unique() if pd.notna(cat)][:5]
+        }
+    except Exception as e:
+        return {
+            "status": "API is running but data loading failed",
+            "error": str(e)
+        }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "STYLUX AI Fashion Assistant"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
