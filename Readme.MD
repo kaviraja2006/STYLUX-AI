@@ -35,8 +35,8 @@ Youtube link:https://youtu.be/ns-WKPTiMKo
 
 ### Team Members
 Kaviraja M ( https://github.com/kaviraja2006 )
-Balaji S
-Rahul AB
+Balaji S ( https://github.com/balaji206 )
+Rahul AB ( https://github.com/Rahulab14 )
 Surya Prakash S
 Balaji CH
 Contact 📩 For any questions or feedback, reach out to us at styluxai1337@gmail.com .
