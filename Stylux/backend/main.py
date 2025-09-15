@@ -2,11 +2,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import pandas as pd
-import sys
-import google.generativeai as genai
+import requests
 from typing import List, Optional
 import os
 from dotenv import load_dotenv
+import json
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,8 +14,18 @@ load_dotenv()
 # Configure the FastAPI app
 app = FastAPI(
     title="STYLUX AI Fashion Assistant API",
-    description="AI-powered fashion recommendation chatbot API",
-    version="1.0.0"
+    description="""
+    AI-powered fashion recommendation chatbot API using OpenRouter AI.
+    
+    This API provides personalized fashion recommendations based on:
+    - Skin tone
+    - Color preferences
+    - Style preferences (casual, formal, party, etc.)
+    - Occasion
+    
+    The API uses OpenRouter's powerful AI models to provide natural, context-aware responses.
+    """,
+    version="2.0.0"
 )
 
 # CORS configuration
@@ -41,28 +51,21 @@ class ChatResponse(BaseModel):
     response: str
     suggested_options: Optional[List[str]] = None
 
-# Initialize Google AI
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-if not GOOGLE_API_KEY:
-    print("Warning: GOOGLE_API_KEY not found in environment variables")
-    print("Please set GOOGLE_API_KEY in your .env file")
-    # For development, you can set a placeholder
-    GOOGLE_API_KEY = "your_google_api_key_here"
+# Initialize OpenRouter API configuration
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+if not OPENROUTER_API_KEY:
+    print("Warning: OPENROUTER_API_KEY not found in environment variables")
+    print("Please set OPENROUTER_API_KEY in your .env file")
+    OPENROUTER_API_KEY = "your_openrouter_api_key_here"
 
-try:
-    genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
-    # Test the API connection
-    test_response = model.generate_content("Test")
-    print("✅ Google AI API is working!")
-except Exception as e:
-    print(f"❌ Error configuring Google AI: {e}")
-    if "SERVICE_DISABLED" in str(e) or "403" in str(e):
-        print("🔧 To fix this:")
-        print("1. Go to: https://console.developers.google.com/apis/api/generativelanguage.googleapis.com/overview")
-        print("2. Enable the Generative Language API")
-        print("3. Wait a few minutes and restart the server")
-    model = None
+OPENROUTER_API_URL = "https://api.openrouter.ai/api/v1/chat/completions"
+HEADERS = {
+    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+    "Content-Type": "application/json",
+    "HTTP-Referer": "http://localhost:5173",  # Replace with your actual domain in production
+    "OpenAI-Organization": "org-gP0iUn5UakNSU8mQHfWoZy9S",  # Required by OpenRouter
+    "X-Title": "STYLUX AI Fashion Assistant"  # Name of your application
+}
 
 def load_fashion_data() -> pd.DataFrame:
     """Load and clean fashion data from the CSV file."""
@@ -173,30 +176,55 @@ Please provide a natural, conversational response that references specific outfi
     
     return prompt.strip()
 
-async def generate_response_from_gemini(prompt: str) -> str:
-    """Generate a response from the Gemini AI model."""
-    if not model:
-        return "I'm sorry, but I'm currently unable to process fashion requests. Please check the API configuration."
-    
+async def generate_response_from_openrouter(prompt: str) -> str:
+    """Generate a response using the OpenRouter API."""
     try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        print(f"Gemini API error: {e}")
-        return "I'm sorry, but I'm having trouble processing your request right now. Please try again later."
-
-def generate_fallback_response(user_message: str, df: pd.DataFrame) -> str:
-    """Generate a fallback response using the fashion dataset when AI is not available."""
-    try:
-        # Convert user message to lowercase for matching
-        message_lower = user_message.lower()
+        payload = {
+            "model": "anthropic/claude-3-haiku",  # Using a more reliable model
+            "messages": [
+                {"role": "system", "content": "You are STYLUX, a friendly and knowledgeable AI fashion assistant specializing in personalized fashion recommendations."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000,  # Limit response length
+            "stream": False  # Don't stream the response
+        }
         
-        # Define keywords for different categories
-        summer_keywords = ['summer', 'hot', 'warm', 'beach', 'vacation', 'casual']
+        response = requests.post(
+            OPENROUTER_API_URL,
+            headers=HEADERS,
+            json=payload
+        )
+        
+        if response.status_code == 200:
+            response_data = response.json()
+            return response_data['choices'][0]['message']['content']
+        else:
+            print(f"OpenRouter API error: {response.status_code} - {response.text}")
+            return generate_fallback_response(prompt)
+            
+    except Exception as e:
+        print(f"Error calling OpenRouter API: {e}")
+        return generate_fallback_response(prompt)
+
+def generate_fallback_response(user_message: str) -> str:
+    """Generate a fallback response when AI is not available."""
+    try:
+        df = load_fashion_data()
+        # Get 3 random outfits from the dataset
+        outfits = df.sample(n=3)
+
+        # Define keywords (same as in generate_prompt_from_history)
+        summer_keywords = ['summer', 'hot', 'warm', 'beach', 'vacation']
         formal_keywords = ['formal', 'business', 'office', 'professional', 'work']
-        party_keywords = ['party', 'celebration', 'evening', 'night', 'dress', 'elegant']
+        party_keywords = ['party', 'celebration', 'evening', 'night', 'dress']
         skin_tone_keywords = ['fair', 'tan', 'medium', 'dark', 'honey', 'caramel', 'deep tan', 'warm brown', 'ebony', 'porcelain', 'light', 'beige', 'olive', 'deep dark']
         color_keywords = ['blue', 'red', 'green', 'yellow', 'black', 'white', 'brown', 'gray', 'navy', 'olive', 'burgundy', 'gold', 'silver', 'emerald', 'mustard', 'charcoal', 'cream', 'tan', 'mint', 'royal', 'sky', 'deep red', 'burnt orange']
+
+        response = ["I apologize for any issues with our AI system. Here are some fashion suggestions for you:"]
+        
+        # Convert user_message to lowercase for keyword matching
+        message_lower = user_message.lower()
         
         # Determine the type of request
         is_summer_request = any(keyword in message_lower for keyword in summer_keywords)
@@ -377,29 +405,13 @@ async def chat_endpoint(request: ChatRequest):
             )
         
         df = load_fashion_data()
+        prompt = generate_prompt_from_history(request.conversation_history + [Message(sender="user", text=request.message, timestamp="")], df)
         
-        # Check if AI is properly configured
-        if model is None:
-            print("AI model not configured, using fallback")
-            response_text = generate_fallback_response(request.message, df)
-        else:
-            # Try to use AI first
-            try:
-                prompt = generate_prompt_from_history(request.conversation_history, df)
-                response_text = await generate_response_from_gemini(prompt)
-                
-                # Check if AI response is an error message
-                if any(error_msg in response_text.lower() for error_msg in [
-                    "i'm sorry", "unable to process", "having trouble", "error"
-                ]):
-                    print("AI returned error, using fallback")
-                    response_text = generate_fallback_response(request.message, df)
-                else:
-                    print("AI response generated successfully")
-                    
-            except Exception as e:
-                print(f"AI generation failed: {e}, using fallback")
-                response_text = generate_fallback_response(request.message, df)
+        try:
+            response_text = await generate_response_from_openrouter(prompt)
+        except Exception as e:
+            print(f"Error generating response: {e}")
+            response_text = generate_fallback_response(request.message)
 
         # Get suggested options from the dataset based on user message
         message_lower = request.message.lower()
@@ -428,9 +440,16 @@ async def chat_endpoint(request: ChatRequest):
         print(f"Error in chat endpoint: {e}")
         # Even if there's an error, try to provide a fallback response
         try:
-            df = load_fashion_data()
-            fallback_response = generate_fallback_response(request.message, df)
-            return ChatResponse(response=fallback_response)
+            response_text = generate_fallback_response(request.message)
+            return ChatResponse(
+                response=response_text,
+                suggested_options=[
+                    "Tell me about summer outfits",
+                    "I have fair skin, what should I wear?",
+                    "Show me formal business wear",
+                    "I like blue colors, any suggestions?"
+                ]
+            )
         except:
             raise HTTPException(status_code=500, detail="Internal Server Error")
 
