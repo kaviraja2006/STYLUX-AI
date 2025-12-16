@@ -38,7 +38,8 @@ default_origins = [
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
     "https://stylux-ai.vercel.app",
-    "https://st-lux-ai.vercel.app"
+    "https://st-lux-ai.vercel.app",
+    "https://stylux-ai.netlify.app"
 ]
 
 app.add_middleware(
