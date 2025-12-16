@@ -20,7 +20,7 @@ function DemoHome() {
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <img src="src\images\image 3.png" alt="logo" className="w-8 h-8 rounded-full " />
+            <img src="/images/image 3.png" alt="logo" className="w-8 h-8 rounded-full " />
             <span className="text-2xl font-bold">
               <span className="text-purple-400">STY</span>
               <span className="text-purple-500">LUX</span>
@@ -28,9 +28,9 @@ function DemoHome() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button 
-              className="px-6 py-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-500 transition-colors" 
-              onClick={handleSignUp} 
+            <button
+              className="px-6 py-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-500 transition-colors"
+              onClick={handleSignUp}
             >
               Sign up (Demo)
             </button>
@@ -45,13 +45,13 @@ function DemoHome() {
       <main className="container mx-auto px-4 pt-20 pb-32 text-center">
         <h1 className="text-5xl md:text-5xl font-bold text-white mb-6">
           The <span className="text-purple-400">fastest</span> way to get trendy collections with
-        </h1> 
+        </h1>
         <h2 className="text-5xl md:text-5xl font-bold text-purple-400 mb-16">STYLUX AI</h2>
 
         {/* Message Input */}
         <div className="relative max-w-2xl mx-auto">
           <div className="flex justify-center">
-            <button 
+            <button
               onClick={handleGenerate}
               className="px-10 py-4 text-2xl bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium"
             >
@@ -66,7 +66,7 @@ function DemoHome() {
 
         {/* Additional Links */}
         <div className="mt-8">
-          <Link 
+          <Link
             to="/chatbot"
             className="inline-block px-8 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
