@@ -27,7 +27,7 @@ const Chatbot: React.FC = () => {
   const [userInput, setUserInput] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to the bottom on new message
@@ -43,7 +43,7 @@ const Chatbot: React.FC = () => {
       text: userInput,
       timestamp: new Date().toLocaleTimeString(),
     };
-    
+
     setChatHistory((prevHistory) => [...prevHistory, newMessage]);
     setUserInput("");
     setIsLoading(true);
@@ -62,7 +62,7 @@ const Chatbot: React.FC = () => {
       };
 
       const response = await axios.post<ChatResponse>(
-        "http://localhost:8000/chat", 
+        `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/chat`,
         requestData,
         {
           headers: {
@@ -77,7 +77,7 @@ const Chatbot: React.FC = () => {
         text: response.data.response,
         timestamp: new Date().toLocaleTimeString(),
       };
-      
+
       setChatHistory((prevHistory) => [...prevHistory, botMessage]);
     } catch (error) {
       console.error("Error fetching response:", error);
@@ -116,15 +116,14 @@ const Chatbot: React.FC = () => {
                 <p className="text-sm mt-2">Tell me about your style preferences, skin tone, or what you're looking for!</p>
               </div>
             )}
-            
+
             {chatHistory.map((msg, index) => (
               <div key={index} className={`mb-4 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                 <div
-                  className={`inline-block p-3 rounded-lg max-w-[80%] ${
-                    msg.sender === "user" 
-                      ? "bg-purple-600 text-white" 
+                  className={`inline-block p-3 rounded-lg max-w-[80%] ${msg.sender === "user"
+                      ? "bg-purple-600 text-white"
                       : "bg-gray-700 text-gray-300"
-                  }`}
+                    }`}
                 >
                   {msg.text}
                 </div>
@@ -133,7 +132,7 @@ const Chatbot: React.FC = () => {
                 </div>
               </div>
             ))}
-            
+
             {isLoading && (
               <div className="text-left mb-4">
                 <div className="inline-block p-3 rounded-lg bg-gray-700 text-gray-300">
@@ -144,7 +143,7 @@ const Chatbot: React.FC = () => {
                 </div>
               </div>
             )}
-            
+
             <div ref={chatEndRef}></div>
           </div>
 
