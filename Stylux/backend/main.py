@@ -31,7 +31,15 @@ app = FastAPI(
 # CORS configuration
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
 origins = allowed_origins_env.split(",") if allowed_origins_env else []
-default_origins = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:5174"]
+default_origins = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "https://stylux-ai.vercel.app",
+    "https://st-lux-ai.vercel.app"
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -77,6 +85,15 @@ def load_fashion_data() -> pd.DataFrame:
         # Get the directory where this script is located
         script_dir = os.path.dirname(os.path.abspath(__file__))
         csv_path = os.path.join(script_dir, 'final.csv')
+        
+        # Fallback: check current working directory if not found in script dir
+        if not os.path.exists(csv_path):
+            current_dir_path = os.path.join(os.getcwd(), 'final.csv')
+            if os.path.exists(current_dir_path):
+                csv_path = current_dir_path
+                print(f"Found final.csv in current directory: {csv_path}")
+            else:
+                print(f"Could not find final.csv in {script_dir} or {os.getcwd()}")
         
         df = pd.read_csv(csv_path)
 
