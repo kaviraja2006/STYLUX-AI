@@ -62,7 +62,7 @@ const Chatbot: React.FC = () => {
       };
 
       const response = await axios.post<ChatResponse>(
-        `${import.meta.env.VITE_API_URL || "https://stylux-ai-13.onrender.com"}/chat`,
+        `${import.meta.env.VITE_API_URL || "https://stylux-ai-15.onrender.com"}/chat`,
         requestData,
         {
           headers: {
