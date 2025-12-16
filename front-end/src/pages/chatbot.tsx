@@ -62,7 +62,7 @@ const Chatbot: React.FC = () => {
       };
 
       const response = await axios.post<ChatResponse>(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/chat`,
+        `${import.meta.env.VITE_API_URL || "https://stylux-ai-13.onrender.com"}/chat`,
         requestData,
         {
           headers: {
@@ -121,8 +121,8 @@ const Chatbot: React.FC = () => {
               <div key={index} className={`mb-4 ${msg.sender === "user" ? "text-right" : "text-left"}`}>
                 <div
                   className={`inline-block p-3 rounded-lg max-w-[80%] ${msg.sender === "user"
-                      ? "bg-purple-600 text-white"
-                      : "bg-gray-700 text-gray-300"
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-700 text-gray-300"
                     }`}
                 >
                   {msg.text}

@@ -48314,7 +48314,7 @@ Style: ${recommendation.style}`;
       const req = { message: currentInput, conversation_history: chatHistory }
       console.log(req)
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/chat`,
+        `${import.meta.env.VITE_API_URL || "https://stylux-ai-13.onrender.com"}/chat`,
         req
       );
       const data = response.data;
