@@ -1,22 +1,17 @@
-import { SignIn, SignUp, UserButton, useUser } from "@clerk/clerk-react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function AuthPage() {
-  const { isSignedIn, user } = useUser(); // Get user info
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to home or dashboard since auth is disabled
+    navigate("/");
+  }, [navigate]);
 
   return (
-    <div>
-      {!isSignedIn ? (
-        <>
-          <h2>Please Sign In</h2>
-          <SignIn />
-          <SignUp />
-        </>
-      ) : (
-        <>
-          <h2>Welcome, {user?.firstName}!</h2>
-          <UserButton />
-        </>
-      )}
-    </div>
-  );
+    <div className="min-h-screen flex items-center justify-center bg-black text-white">
+      <p>Authentication is disabled. Redirecting...</p>
+    </div>
+  );
 }

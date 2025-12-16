@@ -48301,7 +48301,7 @@ Style: ${recommendation.style}`;
       text: userInput,
       timestamp: new Date().toLocaleTimeString(),
     };
-    axios
+
 
     setChatHistory(prev => [...prev, newMessage]);
     setSidebarHistory(prev => [userInput, ...prev].slice(0, 5));
@@ -48431,8 +48431,8 @@ Style: ${recommendation.style}`;
                     )}
                     <div
                       className={`max-w-[80%] p-4 rounded-2xl ${msg.sender === "user"
-                          ? "bg-[#2D1F3D] text-white rounded-tr-sm"
-                          : " text-white rounded-tl-sm"
+                        ? "bg-[#2D1F3D] text-white rounded-tr-sm"
+                        : " text-white rounded-tl-sm"
                         }`}
                     >
                       <p className="whitespace-pre-wrap">{msg.text}</p>

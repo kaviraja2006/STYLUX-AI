@@ -1,19 +1,18 @@
+```javascript
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react"; 
-import { Cat as  Github, Linkedin, Youtube, Twitter,  Mail } from "lucide-react";
+import { Cat as Github, Linkedin, Youtube, Twitter, Mail } from "lucide-react";
 
 function Home() {
   const navigate = useNavigate();
-  const { openSignUp } = useClerk();
 
   // Navigate to generated page
   const handleGenerate = () => {
     navigate('/messages');
   };
 
-  // Open Clerk's sign-up page
+  // Mock sign up for demo purposes or redirect to login
   const handleSignUp = () => {
-    openSignUp();
+    navigate('/sign-up');
   };
 
   return (
@@ -30,9 +29,9 @@ function Home() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button 
-              className="px-6 py-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-500 transition-colors" 
-              onClick={handleSignUp} 
+            <button
+              className="px-6 py-2 rounded-full bg-zinc-800 text-white hover:bg-zinc-500 transition-colors"
+              onClick={handleSignUp}
             >
               Sign up
             </button>
@@ -47,19 +46,19 @@ function Home() {
       <main className="container mx-auto px-4 pt-20 pb-32 text-center">
         <h1 className="text-5xl md:text-5xl font-bold text-white mb-6">
           The <span className="text-purple-400">fastest</span> way to get trendy collections with
-        </h1> 
+        </h1>
         <h2 className="text-5xl md:text-5xl font-bold text-purple-400 mb-16">STYLUX AI</h2>
 
         {/* Message Input */}
         <div className="relative max-w-2xl mx-auto">
-        <div className="flex justify-center">
-  <button 
-    onClick={handleGenerate}
-    className="px-10 py-4 text-2xl bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium"
-  >
-    Generate
-  </button>
-</div>
+          <div className="flex justify-center">
+            <button
+              onClick={handleGenerate}
+              className="px-10 py-4 text-2xl bg-gradient-to-r from-[#A894FF] to-purple-500 hover:from-purple-700 hover:to-purple-700 transition-colors rounded-full text-white text-sm font-medium"
+            >
+              Generate
+            </button>
+          </div>
 
           <p className="text-zinc-400 text-sm mt-4">
             By clicking "Generate" you agree to our <a href="#" className="text-purple-400 hover:underline">Privacy Notice</a>
@@ -67,7 +66,7 @@ function Home() {
         </div>
 
         {/* Additional Links */}
-        
+
 
         <Outlet />
       </main>

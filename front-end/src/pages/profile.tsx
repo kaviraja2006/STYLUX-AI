@@ -1,14 +1,26 @@
-import { useUser } from "@clerk/clerk-react";
+const Profile = () => {
+  // Mock user data for public version
+  const user = {
+    fullName: "Guest User",
+    emailAddresses: [{ emailAddress: "guest@example.com" }],
+    imageUrl: "https://via.placeholder.com/150",
+    username: "guest_user"
+  };
 
-export default function Profile() {
-  const { user } = useUser();
-
-  if (!user) return <p>Loading...</p>;
+  const handleSignOut = () => {
+    console.log("Sign out clicked - no auth provider");
+    window.location.href = "/";
+  };
 
   return (
     <div>
       <h2>Welcome, {user.fullName}!</h2>
-      <p>Email: {user.primaryEmailAddress?.emailAddress || "No email found"}</p>
+      <p>Email: {user.emailAddresses[0].emailAddress || "No email found"}</p>
+      <p>Username: {user.username}</p>
+      <img src={user.imageUrl} alt="User Profile" style={{ borderRadius: '50%', width: '100px', height: '100px' }} />
+      <button onClick={handleSignOut}>Sign Out</button>
     </div>
   );
 }
+
+export default Profile;
