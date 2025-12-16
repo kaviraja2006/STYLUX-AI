@@ -21,7 +21,7 @@ function Home() {
       <nav className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <img src="/images/image 3.png" alt="logo" className="w-8 h-8 rounded-full " />
+            <img src="/images/logo.png" alt="logo" className="w-8 h-8 rounded-full " />
             <span className="text-2xl font-bold">
               <span className="text-purple-400">STY</span>
               <span className="text-purple-500">LUX</span>

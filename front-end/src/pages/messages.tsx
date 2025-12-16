@@ -48424,7 +48424,7 @@ Style: ${recommendation.style}`;
                   <div className="flex items-start gap-2">
                     {msg.sender !== "user" && (
                       <img
-                        src="/images/image 3.png" // Replace with your logo path
+                        src="/images/logo.png" // Replace with your logo path
                         alt="icon"
                         className="w-9 h-10 rounded-full mt-2"
                       />
